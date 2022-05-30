@@ -1,8 +1,6 @@
 import java.util.Scanner;
-import java.util.Locale.Category;
 import java.lang.Thread;
 import java.util.concurrent.TimeUnit;
-import javax.xml.catalog.CatalogException;
 import java.io.*;
 import java.util.HashMap;
 
@@ -32,6 +30,7 @@ public class runGame {
 			System.out.println("PW:");
 			player1_PW = scan.next();
 		} while (!data.get(player1_ID).equals(player1_PW) && data.get(player1_ID) != null);
+		// ID와 PW가 불일치할 경우 재입력
 
 		do {
 			System.out.println("Player2 login");
@@ -59,7 +58,7 @@ public class runGame {
 		Timer.start();
 
 		try {
-			TimeUnit.MILLISECONDS.sleep(timeToSleep * 1000 + 300);
+			TimeUnit.MILLISECONDS.sleep(timeToSleep * 1000 + 500);
 		} catch (InterruptedException e) {
 			e.printStackTrace();
 		}
@@ -76,15 +75,22 @@ public class runGame {
 		int choosePiece, diceResult;
 
 		while (runGame.isFinish != true) {
+
 			System.out.println("\n\nPlayer" + turn + " Turn");
 			game.printBoard();
 			game.getPlayer(turn).printPlayer();
-			boolean catched = false;
-			switch (game.chooseOpt(scan)) {
+
+			boolean catched = false; // 말을 움직여서 상대편 말을 잡았을 경우 true, 다시 던지기
+			boolean valid = false; // 대상으로 지정하는 말이 이미 완주한 말인 경우 false, 다시 입력
+
+			System.out.println("1: throwDice / 2. useSkill");
+			int input = scan.nextInt();
+
+			switch (input) {
 				case 1:
 					do {
 						diceResult = game.throwDice();
-						boolean valid = false;
+						valid = false;
 						System.out.println("choose Piece: ");
 						choosePiece = scan.nextInt();
 						valid = !game.getPlayer(turn).getPiece(choosePiece).isEnded;
@@ -98,7 +104,7 @@ public class runGame {
 					} while (diceResult == 4 || diceResult == 5 || catched && !runGame.isFinish);
 					break;
 				case 2:
-					boolean valid = false;
+					valid = false;
 					System.out.println("choose Piece:");
 					choosePiece = scan.nextInt();
 					valid = !game.getPlayer(turn).getPiece(choosePiece).isEnded;
@@ -107,11 +113,16 @@ public class runGame {
 						choosePiece = scan.nextInt();
 						valid = !game.getPlayer(turn).getPiece(choosePiece).isEnded;
 					}
-					game.useSkill(game, game.getPlayer(turn), game.getPlayer(oppose), choosePiece, scan);
+					if (game.getPlayer(
+							turn).manaStack >= Piece.skillMana[game.getPlayer(turn).getPiece(choosePiece).skill])
+						game.useSkill(game, game.getPlayer(turn), game.getPlayer(oppose), choosePiece, scan);
+					else
+						System.out.println("lack of mana");
 					break;
 				default:
 					break;
 			}
+
 			if (game.getPlayer(turn).piece1.isEnded && game.getPlayer(turn).piece2.isEnded
 					&& game.getPlayer(turn).piece3.isEnded == true) {
 				System.out.println("Player" + turn + " Win!!");
@@ -125,7 +136,8 @@ public class runGame {
 			} else if (turn == 2) {
 				turn = 1;
 				oppose = 2;
-			} // handle unexcepted input
+			}
+
 			if (game.player1.manaStack < 10)
 				game.player1.manaStack++;
 			if (game.player2.manaStack < 10)
@@ -169,7 +181,6 @@ class Game {
 				return player2;
 			default:
 				return player1;
-			// handle unexcepted input
 		}
 	}
 
@@ -195,15 +206,10 @@ class Game {
 		}
 	}
 
-	public int chooseOpt(Scanner scan) {
-		System.out.println("1: throwDice / 2. useSkill");
-		int input = scan.nextInt();
-		return input;
-	}
-
 	public int throwDice() {
 		int count = 0;
 
+		// 1 나오면 앞면 0 나오면 뒷면
 		for (int i = 0; i < 4; i++) {
 			int k = (int) Math.round(Math.random());
 			System.out.printf("%d ", k);
@@ -239,7 +245,8 @@ class Game {
 		boolean catched = false;
 		for (int i = 1; i < 4; i++) {
 			if (opposePlayer.getPiece(i).x == player.getPiece(m).x
-					&& opposePlayer.getPiece(i).y == player.getPiece(m).y) {
+					&& opposePlayer.getPiece(i).y == player.getPiece(m).y
+					&& !(opposePlayer.getPiece(i).x == 6 && opposePlayer.getPiece(i).y == 6)) {
 				opposePlayer.getPiece(i).x = 6;
 				opposePlayer.getPiece(i).y = 6;
 				catched = true;
@@ -253,14 +260,14 @@ class Game {
 		boolean valid = false;
 
 		switch (player.getPiece(m).skill) {
-			case 0:
+			case 0: // 원하는 만큼 움직이기
 				System.out.println(player.skillIntro[player.getPiece(m).skill]);
 				input = scan.nextInt();
 				player.movePiece(m, input);
 				game.checkCatch(player, opposePlayer, m);
 				player.manaStack -= Piece.skillMana[player.getPiece(m).skill];
 				break;
-			case 1:
+			case 1: // 두배로 움직이기
 				boolean catched = false;
 				System.out.println(player.skillIntro[player.getPiece(m).skill]);
 				do {
@@ -270,7 +277,7 @@ class Game {
 				} while (input == 4 || input == 5 || catched && !runGame.isFinish);
 				player.manaStack -= Piece.skillMana[player.getPiece(m).skill];
 				break;
-			case 2:
+			case 2: // 말 하나 얹기
 				System.out.println(player.skillIntro[player.getPiece(m).skill]);
 				System.out.println("choose piece:");
 				input = scan.nextInt();
@@ -283,7 +290,7 @@ class Game {
 				player.getPiece(input).y = player.getPiece(m).y;
 				player.manaStack -= Piece.skillMana[player.getPiece(m).skill];
 				break;
-			case 3:
+			case 3: // 상대 말 하나 출발지점으로 보내기
 				System.out.println(player.skillIntro[player.getPiece(m).skill]);
 				System.out.println("choose piece:");
 				input = scan.nextInt();
@@ -296,7 +303,7 @@ class Game {
 				opposePlayer.getPiece(input).y = 6;
 				player.manaStack -= Piece.skillMana[player.getPiece(m).skill];
 				break;
-			case 4:
+			case 4: // 지름길로만 움직이기
 				System.out.println(player.skillIntro[player.getPiece(m).skill]);
 				do {
 					input = game.throwDice();

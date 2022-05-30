@@ -8,16 +8,15 @@ public class Player {
   int win, lose = 0;
   int manaStack = 0;
   ArrayList<Integer> skillList = new ArrayList<Integer>();
-  String[] skillIntro = new String[] {"Non-throw (5)", "Move twice (2)", "Together (7)",
+  String[] skillIntro = new String[] {"Dice control (5)", "Move twice (2)", "Together (7)",
       "Back to start (10)", "Only shortcut (3)"};
 
   public Player() {
     for (int i = 0; i < 5; i++)
       skillList.add(i);
-    Collections.shuffle(skillList);
-    System.out.println(skillList);
+    Collections.shuffle(skillList); // 스킬 리스트 섞기
 
-    piece1 = new Piece(skillList.get(0));
+    piece1 = new Piece(skillList.get(0)); // 스킬 차례로 부여
     piece2 = new Piece(skillList.get(1));
     piece3 = new Piece(skillList.get(2));
   }

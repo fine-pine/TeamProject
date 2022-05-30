@@ -4,7 +4,7 @@ public class Piece {
 	int skill;
 	int neededMana;
 	boolean isEnded = false;
-	static int[] skillMana = new int[] {5, 2, 7, 10, 3, 2, 0};
+	static int[] skillMana = new int[] {5, 2, 7, 10, 3};
 
 	public static void main(String args[]) {}
 
